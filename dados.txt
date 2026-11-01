@@ -1,9 +1,6 @@
 {
   "title": "Roleta Premiada",
-  "items": [
-    "Miguel",
-    "Gabi"
-  ],
+  "items": [],
   "scheduledTime": null,
   "donors": [
     {
