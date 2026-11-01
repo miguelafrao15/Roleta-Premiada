@@ -10,6 +10,10 @@
     {
       "name": "Miguel",
       "amount": 1
+    },
+    {
+      "name": "Joao",
+      "amount": 5
     }
   ]
 }
