@@ -2,7 +2,6 @@
   "title": "Roleta Premiada",
   "items": [
     "Miguel",
-    "Gostosão",
     "Gabi"
   ],
   "scheduledTime": null,
