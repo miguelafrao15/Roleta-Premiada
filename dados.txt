@@ -3,7 +3,8 @@
   "items": [
     "Silas mais lindo do mundo",
     "Lily",
-    "Kelvi"
+    "Kelvi",
+    "Kemili"
   ],
   "scheduledTime": null,
   "donors": [
