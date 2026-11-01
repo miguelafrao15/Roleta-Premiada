@@ -1,6 +1,8 @@
 {
   "title": "Roleta Premiada",
-  "items": [],
+  "items": [
+    "Silas mais lindo do mundo"
+  ],
   "scheduledTime": null,
   "donors": [
     {
