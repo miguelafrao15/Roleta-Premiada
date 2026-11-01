@@ -20,5 +20,9 @@
       "name": "Joao",
       "amount": 5
     }
-  ]
+  ],
+  "activeSpin": {
+    "winningIndex": 2,
+    "timestamp": 1793576286899
+  }
 }
