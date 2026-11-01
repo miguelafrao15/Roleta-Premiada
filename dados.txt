@@ -6,7 +6,8 @@
     "Kelvi",
     "Kemili",
     "DUUMEMES",
-    "Fernandinha"
+    "Fernandinha",
+    "Rimuru"
   ],
   "scheduledTime": null,
   "donors": [
