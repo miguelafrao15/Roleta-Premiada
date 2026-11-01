@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Roleta Premiada</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 270px;
+            aspect-ratio: 1;
+            margin: 0 auto;
+        }
+        @media (min-width: 640px) {
+            .wheel-wrapper {
+                max-width: 320px;
+            }
+        }
+        canvas#wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .pointer {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 18px solid #3b82f6;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 min-h-screen flex flex-col justify-between p-4 transition-colors duration-300">
+
+    <!-- Header / Title & Theme Toggle -->
+    <header class="w-full max-w-md mx-auto flex items-center justify-between py-2 mb-1 select-none">
+        <div class="w-8"></div> <!-- Spacer -->
+        <h1 id="page-title" class="text-sm sm:text-base font-medium tracking-tight cursor-pointer hover:opacity-75 transition text-center truncate px-2">
+            Roleta Premiada
+        </h1>
+        <button id="theme-toggle" class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-200/80 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition">
+            <i class="fa-solid fa-moon dark:hidden text-xs"></i>
+            <i class="fa-solid fa-sun hidden dark:block text-xs"></i>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center justify-center max-w-md w-full mx-auto gap-3">
+
+        <!-- Navigation Tabs -->
+        <div class="flex bg-zinc-200/70 dark:bg-zinc-900 p-1 rounded-2xl w-full max-w-xs text-xs font-medium">
+            <button id="tab-wheel-btn" class="flex-1 py-2 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm transition">Roleta</button>
+            <button id="tab-funds-btn" class="flex-1 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition">Fundos</button>
+        </div>
+
+        <!-- Tab 1: Roleta View -->
+        <div id="view-wheel" class="w-full flex flex-col items-center gap-3">
+            <!-- Sync Status -->
+            <div id="sync-status" class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 flex items-center gap-1.5">
+                <i id="sync-dot" class="fa-solid fa-circle text-emerald-500 text-[7px]"></i> <span id="sync-text">Sincronizado com GitHub (dados.txt)</span>
+            </div>
+
+            <!-- Timer Display -->
+            <div id="timer-box" class="hidden w-full bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3 text-center backdrop-blur-md">
+                <div id="scheduled-time-label" class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 mb-0.5">
+                    Giro Agendado (Brasília)
+                </div>
+                <div id="timer-countdown" class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    00:00:00
+                </div>
+            </div>
+
+            <!-- Wheel Canvas Area -->
+            <div class="wheel-wrapper my-1">
+                <div class="pointer"></div>
+                <canvas id="wheel" width="600" height="600"></canvas>
+            </div>
+
+            <!-- Spin Button (Exclusivo para o Desenvolvedor) -->
+            <button id="spin-btn" class="hidden w-full max-w-xs bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-medium text-xs py-3 px-6 rounded-2xl shadow-sm transition duration-200">
+                GIRAR ROLETA
+            </button>
+        </div>
+
+        <!-- Tab 2: Fundos & Top Doadores View -->
+        <div id="view-funds" class="hidden w-full space-y-3">
+            <!-- Total Funds Card -->
+            <div class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 text-center">
+                <div class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1">Total em Fundos</div>
+                <div id="total-funds-amount" class="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">R$ 0,00</div>
+            </div>
+
+            <!-- Top 3 Donors Card -->
+            <div class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 space-y-2.5">
+                <div class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Top 3 Doadores</div>
+                <div id="top-donors-list" class="space-y-2">
+                    <!-- Dynamic Top 3 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Mode Panel (Ativado após 30 cliques no título) -->
+        <div id="dev-panel" class="hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 shadow-xl space-y-3 transition-all">
+            <div class="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                <h2 class="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+                    Modo Desenvolvedor
+                </h2>
+                <span class="text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">Painel Ativo</span>
+            </div>
+
+            <!-- Edit Wheel Title -->
+            <div class="space-y-1">
+                <label class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Título da Roleta</label>
+                <div class="flex gap-1.5">
+                    <input type="text" id="dev-wheel-title" class="flex-1 bg-zinc-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-xs outline-none text-zinc-800 dark:text-zinc-200">
+                    <button id="save-title-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl transition">Salvar</button>
+                </div>
+            </div>
+
+            <!-- Timer Config -->
+            <div class="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                <label class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Agendar Giro Automático (Horário de Brasília)</label>
+                <div class="flex gap-1.5">
+                    <input type="time" id="dev-scheduled-time" step="1" class="bg-zinc-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-xs outline-none text-zinc-800 dark:text-zinc-200">
+                    <button id="enable-timer-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl transition">Ativar</button>
+                    <button id="disable-timer-btn" class="bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs px-3 py-2 rounded-xl transition">Desativar</button>
+                </div>
+            </div>
+
+            <!-- Manage Funds & Donors -->
+            <div class="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                <label class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Adicionar Doador / Fundos</label>
+                <div class="flex gap-1.5">
+                    <input type="text" id="dev-donor-name" placeholder="Nome" class="flex-1 bg-zinc-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-xs outline-none text-zinc-800 dark:text-zinc-200">
+                    <input type="number" id="dev-donor-amount" placeholder="R$" class="w-20 bg-zinc-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-xs outline-none text-zinc-800 dark:text-zinc-200">
+                    <button id="add-donor-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-xl transition">Add</button>
+                </div>
+            </div>
+
+            <!-- Manage Items -->
+            <div class="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                <label class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Adicionar Item na Roleta</label>
+                <div class="flex gap-1.5">
+                    <input type="text" id="dev-new-item" placeholder="Nome do item" class="flex-1 bg-zinc-100 dark:bg-zinc-800 border-0 rounded-xl px-3 py-2 text-xs outline-none text-zinc-800 dark:text-zinc-200">
+                    <button id="add-item-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl transition">Inserir</button>
+                </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="space-y-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                <label class="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Itens Cadastrados</label>
+                <div id="items-list" class="space-y-1 max-h-32 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full text-center py-2"></footer>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 text-center max-w-xs w-full shadow-2xl space-y-3">
+            <div class="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">Resultado do Sorteio</div>
+            <div id="winner-name" class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 break-words"></div>
+            <button id="close-modal-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl transition text-xs">OK</button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-900 dark:bg-zinc-800 text-white text-xs px-4 py-2.5 rounded-full shadow-xl backdrop-blur transition-all duration-300 opacity-0 pointer-events-none z-50 whitespace-nowrap">
+        <span id="toast-msg"></span>
+    </div>
+
+    <!-- APPLICATION LOGIC WITH GITHUB API -->
+    <script>
+        const GITHUB_TOKEN = "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";
+        const REPO = "miguelafrao15/Roleta-Premiada";
+        const FILE_PATH = "dados.txt";
+        const GITHUB_API_URL = `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`;
+
+        let appState = {
+            title: "Roleta Premiada",
+            items: [],
+            scheduledTime: null,
+            donors: []
+        };
+
+        let fileSha = null;
+        let clickCount = 0;
+        let clickTimer = null;
+        let isDevMode = false;
+
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spin-btn');
+        const pageTitle = document.getElementById('page-title');
+        const devPanel = document.getElementById('dev-panel');
+        const itemsList = document.getElementById('items-list');
+        const devWheelTitle = document.getElementById('dev-wheel-title');
+        const saveTitleBtn = document.getElementById('save-title-btn');
+        const devNewItem = document.getElementById('dev-new-item');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const resultModal = document.getElementById('result-modal');
+        const winnerName = document.getElementById('winner-name');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        const tabWheelBtn = document.getElementById('tab-wheel-btn');
+        const tabFundsBtn = document.getElementById('tab-funds-btn');
+        const viewWheel = document.getElementById('view-wheel');
+        const viewFunds = document.getElementById('view-funds');
+
+        const totalFundsAmount = document.getElementById('total-funds-amount');
+        const topDonorsList = document.getElementById('top-donors-list');
+        const devDonorName = document.getElementById('dev-donor-name');
+        const devDonorAmount = document.getElementById('dev-donor-amount');
+        const addDonorBtn = document.getElementById('add-donor-btn');
+
+        const timerBox = document.getElementById('timer-box');
+        const timerCountdown = document.getElementById('timer-countdown');
+        const scheduledTimeLabel = document.getElementById('scheduled-time-label');
+        const devScheduledTime = document.getElementById('dev-scheduled-time');
+        const enableTimerBtn = document.getElementById('enable-timer-btn');
+        const disableTimerBtn = document.getElementById('disable-timer-btn');
+
+        const syncDot = document.getElementById('sync-dot');
+        const syncText = document.getElementById('sync-text');
+
+        let currentAngle = 0;
+        let isSpinning = false;
+        let timerTriggeredToday = false;
+
+        const colors = [
+            '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+            '#ec4899', '#06b6d4', '#f43f5e', '#84cc16'
+        ];
+
+        // --- SINCRONIZAÇÃO COM GITHUB (dados.txt) ---
+        async function fetchGitHubData() {
+            try {
+                const response = await fetch(GITHUB_API_URL, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    fileSha = data.sha;
+                    const decodedContent = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+                    appState = JSON.parse(decodedContent);
+                    updateUI();
+                    syncDot.className = "fa-solid fa-circle text-emerald-500 text-[7px]";
+                    syncText.innerText = "Sincronizado com GitHub (dados.txt)";
+                }
+            } catch (e) {
+                const saved = localStorage.getItem("roleta_github_fallback");
+                if (saved) {
+                    appState = JSON.parse(saved);
+                    updateUI();
+                }
+            }
+        }
+
+        async function saveGitHubData() {
+            localStorage.setItem("roleta_github_fallback", JSON.stringify(appState));
+            try {
+                const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(appState, null, 2))));
+                const bodyData = {
+                    message: "Atualizando dados.txt da Roleta Premiada",
+                    content: contentEncoded,
+                    sha: fileSha
+                };
+
+                const response = await fetch(GITHUB_API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    fileSha = data.content.sha;
+                    syncDot.className = "fa-solid fa-circle text-emerald-500 text-[7px]";
+                    syncText.innerText = "Salvo no GitHub com sucesso";
+                } else {
+                    throw new Error("Erro ao salvar no GitHub");
+                }
+            } catch (err) {
+                syncDot.className = "fa-solid fa-circle text-amber-500 text-[7px]";
+                syncText.innerText = "Modo Offline (Salvo localmente)";
+            }
+        }
+
+        // Carrega ao iniciar e atualiza a cada 5 segundos
+        fetchGitHubData();
+        setInterval(fetchGitHubData, 5000);
+
+        // --- TABS SWITCHING ---
+        tabWheelBtn.addEventListener('click', () => {
+            tabWheelBtn.className = "flex-1 py-2 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm transition";
+            tabFundsBtn.className = "flex-1 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition";
+            viewWheel.classList.remove('hidden');
+            viewFunds.classList.add('hidden');
+            drawWheel();
+        });
+
+        tabFundsBtn.addEventListener('click', () => {
+            tabFundsBtn.className = "flex-1 py-2 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm transition";
+            tabWheelBtn.className = "flex-1 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition";
+            viewFunds.classList.remove('hidden');
+            viewWheel.classList.add('hidden');
+            renderFundsView();
+        });
+
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            drawWheel();
+        });
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
+
+        function getBrasiliaDate() {
+            const now = new Date();
+            const brasiliaStr = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+            return new Date(brasiliaStr);
+        }
+
+        function updateTimerLoop() {
+            if (!appState.scheduledTime) {
+                timerBox.classList.add('hidden');
+                return;
+            }
+
+            timerBox.classList.remove('hidden');
+            scheduledTimeLabel.innerText = `Giro Agendado (${appState.scheduledTime})`;
+
+            const now = getBrasiliaDate();
+            const [targetH, targetM, targetS = 0] = appState.scheduledTime.split(':').map(Number);
+
+            const targetDate = new Date(now);
+            targetDate.setHours(targetH, targetM, targetS, 0);
+
+            let diff = targetDate.getTime() - now.getTime();
+
+            if (diff < -5000) {
+                targetDate.setDate(targetDate.getDate() + 1);
+                diff = targetDate.getTime() - now.getTime();
+                timerTriggeredToday = false;
+            }
+
+            if (Math.abs(diff) <= 1000 && !isSpinning && !timerTriggeredToday) {
+                timerTriggeredToday = true;
+                spinWheel();
+            }
+
+            if (diff > 0) {
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24).toString().padStart(2, '0');
+                const minutes = Math.floor((diff / (1000 * 60)) % 60).toString().padStart(2, '0');
+                const seconds = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+                timerCountdown.innerText = `${hours}:${minutes}:${seconds}`;
+            } else {
+                timerCountdown.innerText = "00:00:00";
+            }
+        }
+        setInterval(updateTimerLoop, 1000);
+
+        enableTimerBtn.addEventListener('click', () => {
+            const val = devScheduledTime.value;
+            if (val) {
+                const formattedTime = val.length === 5 ? `${val}:00` : val;
+                appState.scheduledTime = formattedTime;
+                timerTriggeredToday = false;
+                updateUI();
+                saveGitHubData();
+                showToast(`Timer agendado para ${formattedTime}`);
+            }
+        });
+
+        disableTimerBtn.addEventListener('click', () => {
+            appState.scheduledTime = null;
+            updateUI();
+            saveGitHubData();
+            showToast('Timer desativado');
+        });
+
+        // --- MODO DEV (30 CLIQUES NO TÍTULO) ---
+        pageTitle.addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCount = 0; }, 3000);
+
+            if (clickCount >= 30) {
+                clickCount = 0;
+                isDevMode = !isDevMode;
+
+                if (isDevMode) {
+                    devPanel.classList.remove('hidden');
+                    spinBtn.classList.remove('hidden');
+                    devPanel.scrollIntoView({ behavior: 'smooth' });
+                    showToast('Modo Desenvolvedor Ativo');
+                } else {
+                    devPanel.classList.add('hidden');
+                    spinBtn.classList.add('hidden');
+                    showToast('Modo Desenvolvedor Desativado');
+                }
+            }
+        });
+
+        function updateUI() {
+            pageTitle.innerText = appState.title || "Roleta Premiada";
+            devWheelTitle.value = appState.title || "";
+            if (appState.scheduledTime) {
+                devScheduledTime.value = appState.scheduledTime;
+            }
+
+            renderItemsList();
+            renderFundsView();
+            drawWheel();
+            updateTimerLoop();
+        }
+
+        function renderFundsView() {
+            const total = (appState.donors || []).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+            totalFundsAmount.innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            const sorted = [...(appState.donors || [])].sort((a, b) => Number(b.amount) - Number(a.amount)).slice(0, 3);
+            
+            topDonorsList.innerHTML = '';
+            if (sorted.length === 0) {
+                topDonorsList.innerHTML = `<div class="text-xs text-zinc-400 italic py-1 text-center">Nenhum doador registrado</div>`;
+                return;
+            }
+
+            sorted.forEach((donor, idx) => {
+                const medals = ['🥇', '🥈', '🥉'];
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-white dark:bg-zinc-800/80 px-3 py-2 rounded-xl text-xs';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2 font-medium">
+                        <span>${medals[idx]}</span>
+                        <span class="truncate max-w-[140px]">${escapeHtml(donor.name)}</span>
+                    </div>
+                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">${Number(donor.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                `;
+                topDonorsList.appendChild(row);
+            });
+        }
+
+        addDonorBtn.addEventListener('click', () => {
+            const name = devDonorName.value.trim();
+            const amount = parseFloat(devDonorAmount.value);
+            if (name && !isNaN(amount)) {
+                if (!appState.donors) appState.donors = [];
+                appState.donors.push({ name, amount });
+                devDonorName.value = '';
+                devDonorAmount.value = '';
+                updateUI();
+                saveGitHubData();
+                showToast('Doador adicionado!');
+            }
+        });
+
+        function renderItemsList() {
+            itemsList.innerHTML = '';
+            if (!appState.items || appState.items.length === 0) {
+                itemsList.innerHTML = `<div class="text-xs text-zinc-400 italic py-1">Nenhum item adicionado</div>`;
+                return;
+            }
+
+            appState.items.forEach((item, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/80 px-3 py-1.5 rounded-xl';
+                itemEl.innerHTML = `
+                    <input type="text" value="${escapeHtml(item)}" data-index="${index}" class="edit-item-input flex-1 bg-transparent text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none">
+                    <button onclick="removeItem(${index})" class="text-zinc-400 hover:text-red-500 transition px-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+                `;
+                itemsList.appendChild(itemEl);
+            });
+
+            document.querySelectorAll('.edit-item-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    const val = e.target.value.trim();
+                    if (val) {
+                        appState.items[idx] = val;
+                        drawWheel();
+                        saveGitHubData();
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        addItemBtn.addEventListener('click', () => {
+            const val = devNewItem.value.trim();
+            if (val) {
+                if (!appState.items) appState.items = [];
+                appState.items.push(val);
+                devNewItem.value = '';
+                updateUI();
+                saveGitHubData();
+                showToast('Item adicionado!');
+            }
+        });
+
+        devNewItem.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItemBtn.click();
+        });
+
+        window.removeItem = function(index) {
+            appState.items.splice(index, 1);
+            updateUI();
+            saveGitHubData();
+        };
+
+        saveTitleBtn.addEventListener('click', () => {
+            const val = devWheelTitle.value.trim();
+            if (val) {
+                appState.title = val;
+                updateUI();
+                saveGitHubData();
+                showToast('Título atualizado!');
+            }
+        });
+
+        // --- DESENHO DA ROLETA ---
+        function drawWheel() {
+            const items = appState.items || [];
+            const numItems = items.length;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2 - 10;
+            const isDark = document.documentElement.classList.contains('dark');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (numItems === 0) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = isDark ? '#121212' : '#f4f4f5';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = isDark ? '#27272a' : '#e4e4e7';
+                ctx.stroke();
+
+                ctx.fillStyle = isDark ? '#71717a' : '#a1a1aa';
+                ctx.font = '500 16px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Adicione itens no Modo Dev', centerX, centerY);
+                return;
+            }
+
+            const sliceAngle = (2 * Math.PI) / numItems;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentAngle);
+
+            for (let i = 0; i < numItems; i++) {
+                const angle = i * sliceAngle;
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius, angle, angle + sliceAngle);
+                ctx.closePath();
+
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = isDark ? '#000000' : '#ffffff';
+                ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(angle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ffffff';
+                
+                const fontSize = Math.max(12, Math.min(18, 240 / numItems));
+                ctx.font = `600 ${fontSize}px -apple-system, sans-serif`;
+                
+                ctx.fillText(items[i], radius - 18, 0);
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 26, 0, 2 * Math.PI);
+            ctx.fillStyle = isDark ? '#09090b' : '#ffffff';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = isDark ? '#27272a' : '#e4e4e7';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            const items = appState.items || [];
+            if (items.length < 2) {
+                showToast('Adicione pelo menos 2 itens');
+                return;
+            }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50');
+
+            const numItems = items.length;
+            const sliceAngle = (2 * Math.PI) / numItems;
+
+            const winningIndex = Math.floor(Math.random() * numItems);
+            const extraRotations = (5 + Math.floor(Math.random() * 4)) * 2 * Math.PI;
+
+            const targetSliceCenter = winningIndex * sliceAngle + sliceAngle / 2;
+            const finalAngle = extraRotations + (3 * Math.PI / 2) - targetSliceCenter;
+
+            const startTime = performance.now();
+            const duration = 4500;
+            const startAngle = currentAngle % (2 * Math.PI);
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 4);
+
+                currentAngle = startAngle + (finalAngle - startAngle) * easeOut;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-50');
+                    showWinner(items[winningIndex]);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        spinBtn.addEventListener('click', spinWheel);
+
+        function showWinner(name) {
+            winnerName.innerText = name;
+            resultModal.classList.remove('hidden');
+
+            confetti({
+                particleCount: 80,
+                spread: 60,
+                origin: { y: 0.6 }
+            });
+        }
+
+        closeModalBtn.addEventListener('click', () => {
+            resultModal.classList.add('hidden');
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
