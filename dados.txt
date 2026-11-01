@@ -1,0 +1,6 @@
+{
+  "title": "Roleta Premiada",
+  "items": [
+    "Miguel"
+  ]
+}
