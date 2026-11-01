@@ -4,7 +4,8 @@
     "Silas mais lindo do mundo",
     "Lily",
     "Kelvi",
-    "Kemili"
+    "Kemili",
+    "DUUMEMES"
   ],
   "scheduledTime": null,
   "donors": [
