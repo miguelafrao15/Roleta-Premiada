@@ -1,6 +1,8 @@
 {
   "title": "Roleta Premiada",
   "items": [
-    "Miguel"
-  ]
+    "Miguel",
+    "Gostosão"
+  ],
+  "scheduledTime": null
 }
