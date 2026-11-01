@@ -4,5 +4,11 @@
     "Miguel",
     "Gostosão"
   ],
-  "scheduledTime": null
+  "scheduledTime": null,
+  "donors": [
+    {
+      "name": "Miguel",
+      "amount": 1
+    }
+  ]
 }
