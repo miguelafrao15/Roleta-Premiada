@@ -22,7 +22,7 @@
     }
   ],
   "activeSpin": {
-    "winningIndex": 2,
-    "timestamp": 1793576286899
+    "winningIndex": 1,
+    "timestamp": 1793576350283
   }
 }
