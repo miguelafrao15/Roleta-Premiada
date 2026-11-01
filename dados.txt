@@ -5,7 +5,7 @@
     "Gostosão",
     "Gabi"
   ],
-  "scheduledTime": "20:16:00",
+  "scheduledTime": null,
   "donors": [
     {
       "name": "Miguel",
