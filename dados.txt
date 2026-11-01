@@ -10,7 +10,7 @@
     "Rimuru",
     "Miguel"
   ],
-  "scheduledTime": "20:27:00",
+  "scheduledTime": null,
   "donors": [
     {
       "name": "Miguel",
