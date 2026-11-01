@@ -7,7 +7,8 @@
     "Kemili",
     "DUUMEMES",
     "Fernandinha",
-    "Rimuru"
+    "Rimuru",
+    "Elizabeth"
   ],
   "scheduledTime": null,
   "donors": [
