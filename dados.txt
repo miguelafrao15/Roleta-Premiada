@@ -5,7 +5,8 @@
     "Lily",
     "Kelvi",
     "Kemili",
-    "DUUMEMES"
+    "DUUMEMES",
+    "Fernandinha"
   ],
   "scheduledTime": null,
   "donors": [
