@@ -2,7 +2,8 @@
   "title": "Roleta Premiada",
   "items": [
     "Miguel",
-    "Gostosão"
+    "Gostosão",
+    "Gabi"
   ],
   "scheduledTime": null,
   "donors": [
